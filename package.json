@@ -12,6 +12,7 @@
   "dependencies": {
     "colors": "~1.1.2",
     "keypress": "~0.2.1",
-    "node-terminal": "~0.1.1"
+    "node-terminal": "~0.1.1",
+    "pty.js": "~0.3.0"
   }
 }
