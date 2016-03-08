@@ -16,9 +16,10 @@ const MIDWIDTH = ~~(WIDTH / 2);
 const MIDHEIGHT = ~~(HEIGHT / 2);
 const FPS = 15;
 const FRAMERATE = ~~(1000 / FPS);
-const DIFFICULTY = 0.5; // Lower is harder
+const DIFFICULTY = 50; // out of 100
 const STARTTIME = new Date().getTime();
 const PLAYERLINE = ~~(HEIGHT / 4 + HEIGHT / 2);
+let ALIVE = true;
 
 var npm = pty.spawn('npm', args, {
   cwd: process.cwd()
@@ -39,6 +40,9 @@ npm.stdout.on('end', d => {
   gameOver(true);
 });
 
+npm.on('close', d => {
+  gameOver(true);
+});
 
 let SCORE = 0;
 
@@ -53,24 +57,21 @@ const gameState = [{
 }];
 
 function Monster (text) {
-  function getPlacement () {
-    let randomStart = ~~(Math.random() * (WIDTH - RIGHTWALL - LEFTWALL - text.length));
-    randomStart = Math.min(randomStart, WIDTH - RIGHTWALL - text.length);
-    randomStart = Math.max(randomStart, LEFTWALL);
+  this.s = text;
+
+  this.getPlacement = () => {
+    let randomStart = ~~(Math.random() * (WIDTH - RIGHTWALL - LEFTWALL));
+    randomStart = Math.min(randomStart, WIDTH - this.s.length);
+    randomStart = Math.max(randomStart, 0);
     return randomStart;
   }
 
   Object.assign(this, {
     type: 'mob',
-    s: text,
     up: 0,
-    left: getPlacement(),
+    left: this.getPlacement(),
     colour: 'red'
   });
-
-  setInterval(() => {
-    this.up++;
-  }, FRAMERATE);
 }
 
 function isInstall (args) {
@@ -91,35 +92,44 @@ function paintScreen () {
 
     term.nl();
   }
+
+  gameState.filter(item => item.type === 'mob')
+    .forEach(item => {
+      item.up++;
+    })
+}
+
+function cursorReturn (item) {
+  term.left(item.left + item.s.length)
 }
 
 function paintMovers (line) {
-  const arr = gameState.filter(item => item.up === line).sort((a, b) => a.left > b.left);
+  const entities = gameState.filter(item => item.up === line).sort((a, b) => a.left > b.left);
 
-  function cursorReturn (item) {
-    term.left(item.left + item.s.length)
-  }
 
-  if (arr.length > 0) {
-    arr.forEach(item => {
+  if (entities.length > 0) {
+    entities.forEach(item => {
       term.right(item.left).write(item.s[item.colour]);
       cursorReturn(item)
     })
     if (line === PLAYERLINE) {
-      const playerPos = arr.find(item => item.type === 'player').left;
-      const dangerZone = [];
-      arr.filter(item => item.type === 'mob')
-        .forEach(item => {
-          for (var i = item.left; i < item.left + item.s.length; i++) {
-            dangerZone.push(i);
-          }
-        });
-      if (intersects(playerPos, dangerZone)) {
-        term.nl();
-        // console.log(playerPos, dangerZone, arr)
-        gameOver()
-      }
+      checkIntersects(line, entities)
     }
+  }
+}
+
+function checkIntersects (line, entities) {
+  const playerPos = entities.find(item => item.type === 'player').left;
+  const dangerZone = [];
+  entities.filter(item => item.type === 'mob')
+    .forEach(item => {
+      for (var i = item.left; i < item.left + item.s.length; i++) {
+        dangerZone.push(i);
+      }
+    });
+  if (intersects(playerPos, dangerZone)) {
+    ALIVE = false;
+    setTimeout(gameOver, 1000)
   }
 }
 
@@ -145,7 +155,7 @@ function intersects (playerPos, dangerZone) {
 
 function generateScene () {
   const packages = Object.keys(installingPackages);
-  if (packages.length > 0) {
+  if (packages.length > 0 && (Math.random() * 100) < DIFFICULTY) {
     const lastMsg = packages.pop();
     gameState.push(new Monster(lastMsg));
   }
@@ -156,9 +166,11 @@ function setScore () {
 }
 
 function runLoop () {
-  term.clear();
-  generateScene();
-  paintScreen();
+  if (ALIVE) {
+    term.clear();
+    generateScene();
+    paintScreen();
+  }
 };
 
 keypress(process.stdin);
