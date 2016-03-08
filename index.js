@@ -14,7 +14,7 @@ const LEFTWALL = 10;
 const RIGHTWALL = 10;
 const MIDWIDTH = ~~(WIDTH / 2);
 const MIDHEIGHT = ~~(HEIGHT / 2);
-const FPS = 5;
+const FPS = 15;
 const FRAMERATE = ~~(1000 / FPS);
 const DIFFICULTY = 0.5; // Lower is harder
 const STARTTIME = new Date().getTime();
@@ -57,7 +57,6 @@ function Monster (text) {
     let randomStart = ~~(Math.random() * (WIDTH - RIGHTWALL - LEFTWALL - text.length));
     randomStart = Math.min(randomStart, WIDTH - RIGHTWALL - text.length);
     randomStart = Math.max(randomStart, LEFTWALL);
-    console.log(randomStart)
     return randomStart;
   }
 
@@ -83,10 +82,12 @@ function paintScreen () {
 
     if (line === 4) {
       setScore();
-      term.clearLine().left(0).write(SCORE);
-    } else {
-      paintMovers(line);
+      term.write(SCORE);
+      const scoreWidth = SCORE.toString().length;
+      term.left(scoreWidth);
     }
+
+    paintMovers(line)
 
     term.nl();
   }
@@ -100,7 +101,6 @@ function paintMovers (line) {
   }
 
   if (arr.length > 0) {
-    // console.log(arr)
     arr.forEach(item => {
       term.right(item.left).write(item.s[item.colour]);
       cursorReturn(item)
@@ -116,7 +116,7 @@ function paintMovers (line) {
         });
       if (intersects(playerPos, dangerZone)) {
         term.nl();
-        console.log(playerPos, dangerZone, arr)
+        // console.log(playerPos, dangerZone, arr)
         gameOver()
       }
     }
@@ -156,6 +156,7 @@ function setScore () {
 }
 
 function runLoop () {
+  term.clear();
   generateScene();
   paintScreen();
 };
