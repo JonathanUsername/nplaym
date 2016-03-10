@@ -1,11 +1,16 @@
 {
   "name": "nplaym",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "A wrapper for npm so you can play a Space-Invaders-a-like game while installing.",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "nplaym": "./bin/nplaym"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/JonathanUsername/nplaym.git"
   },
   "author": "Jonathan King",
   "license": "ISC",
