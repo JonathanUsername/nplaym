@@ -18,5 +18,4 @@ Left and right to steer your craft, space to fire.
 Tested with Node v4.2.2
 
 TODO:
-- Make it work using npm start, not just ./index.js
 - Support older versions of npm, not just >3
