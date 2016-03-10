@@ -78,10 +78,34 @@ function Monster (text) {
     up: 0,
     left: this.getPlacement(),
     colour: 'red',
-    dead: false
+    dead: false,
+    colourIndex: 0
   });
 
   this.createDangerZone();
+  this.tick = () => {
+    this.up = this.up + 1;
+    if (this.dead) {
+      this.turnToDebris();
+    }
+  }
+  this.turnToDebris = () => {
+    let str = '';
+    for (var i = 0; i < this.s.length; i++) {
+      const debrisChoices = ';,.`\'"'.split('');
+      str += getRandom(debrisChoices);
+    }
+    this.s = str;
+    const colourChoices = ['yellow', 'grey', 'black'];
+    if (this.colour !== 'black') {
+      this.colour = colourChoices[this.colourIndex];
+      this.colourIndex++;
+    }
+  }
+}
+
+function getRandom (arr) {
+  return arr[~~(Math.random() * arr.length)];
 }
 
 function Bullet (xCoord) {
@@ -116,11 +140,7 @@ function paintScreen () {
     term.nl();
   }
 
-  gameState.filter(item => item.type === 'mob')
-    .forEach((item, index) => {
-      item.up++;
-    })
-  gameState.filter(item => item.type === 'bullet')
+  gameState.filter(item => item.type === 'bullet' || item.type === 'mob')
     .forEach(item => {
       item.tick();
     })
@@ -153,7 +173,7 @@ function checkBullet(line, entities) {
   bullets.forEach((bullet, bi) => {
     // console.log(item.left, dangerZone)
     mobs.forEach((mob, mi) => {
-      if (intersects(bullet.left, mob.dangerZone) && !bullet.dead) {
+      if (intersects(bullet.left, mob.dangerZone) && !bullet.dead && !mob.dead) {
         bullet.dead = true;
         bullet.colour = 'black';
         mob.s = 'x'.repeat(mob.s.length);
