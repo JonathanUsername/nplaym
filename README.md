@@ -10,7 +10,7 @@ npm install -g nplaym
 ```
 ## How to run
 ```
-cd myProject // Fresh directory with no node_modules/ directory yet.
+cd myProject  # Fresh directory with no node_modules/ directory yet.
 nplaym install
 ```
 ## How to play
