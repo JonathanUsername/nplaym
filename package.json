@@ -1,6 +1,6 @@
 {
   "name": "nplaym",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A wrapper for npm so you can play a Space-Invaders-a-like game while installing.",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -16,8 +16,11 @@
   "license": "ISC",
   "dependencies": {
     "colors": "~1.1.2",
+    "extend": "~3.0.0",
     "keypress": "~0.2.1",
+    "nan": "~2.2.0",
     "node-terminal": "~0.1.1",
+    "pty": "0.0.0",
     "pty.js": "~0.3.0"
   }
 }
