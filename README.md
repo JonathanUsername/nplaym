@@ -6,12 +6,12 @@ Try to survive the onslaught of installing packages.
 
 ## How to install
 ```
-npm i
+npm install -g nplaym
 ```
 ## How to run
 ```
 cd myProject
-node ../terminal_game/index.js install
+nplaym install
 ```
 ## How to play
 Left and right to steer your craft, space to fire.
