@@ -1,6 +1,8 @@
 # terminal_game
 A fun wrapper for npm. Try to survive the onslaught of installing packages. 
 
+![screen shot 2016-03-10 at 10 54 48](https://cloud.githubusercontent.com/assets/7237525/13667571/f0236c80-e6ae-11e5-9e29-5276fab4f99d.png)
+
 ## How to install
 ```
 npm i
