@@ -58,6 +58,7 @@ const gameState = [{
 
 function Monster (text) {
   this.s = text;
+  this.dangerZone = [];
 
   this.getPlacement = () => {
     let randomStart = ~~(Math.random() * (WIDTH - RIGHTWALL - LEFTWALL));
@@ -66,12 +67,34 @@ function Monster (text) {
     return randomStart;
   }
 
+  this.createDangerZone = function () {
+    for (var i = this.left; i < this.left + this.s.length; i++) {
+      this.dangerZone.push(i);
+    }
+  }
+
   Object.assign(this, {
     type: 'mob',
     up: 0,
     left: this.getPlacement(),
-    colour: 'red'
+    colour: 'red',
+    dead: false
   });
+
+  this.createDangerZone();
+}
+
+function Bullet (xCoord) {
+  this.type = 'bullet';
+  this.left = xCoord;
+  this.s = '|';
+  this.colour = 'magenta';
+  this.up = PLAYERLINE - 1;
+  this.speed = 2;
+  this.tick = () => {
+    this.up = this.up - 1;
+  }
+  this.dead = false;
 }
 
 function isInstall (args) {
@@ -94,8 +117,12 @@ function paintScreen () {
   }
 
   gameState.filter(item => item.type === 'mob')
-    .forEach(item => {
+    .forEach((item, index) => {
       item.up++;
+    })
+  gameState.filter(item => item.type === 'bullet')
+    .forEach(item => {
+      item.tick();
     })
 }
 
@@ -112,25 +139,41 @@ function paintMovers (line) {
       term.right(item.left).write(item.s[item.colour]);
       cursorReturn(item)
     })
+    checkBullet(line, entities);
     if (line === PLAYERLINE) {
       checkIntersects(line, entities)
     }
   }
 }
 
+function checkBullet(line, entities) {
+  const bullets = entities.filter(i => i.type === 'bullet');
+  const mobs = entities.filter(i => i.type === 'mob');
+  const bulletsToGo = [];
+  bullets.forEach((bullet, bi) => {
+    // console.log(item.left, dangerZone)
+    mobs.forEach((mob, mi) => {
+      if (intersects(bullet.left, mob.dangerZone) && !bullet.dead) {
+        bullet.dead = true;
+        bullet.colour = 'black';
+        mob.s = 'x'.repeat(mob.s.length);
+        mob.dead = true;
+        mob.colour = 'yellow';
+      }
+    })
+  })
+} 
+
 function checkIntersects (line, entities) {
   const playerPos = entities.find(item => item.type === 'player').left;
+  const mobs = entities.filter(i => i.type === 'mob');
   const dangerZone = [];
-  entities.filter(item => item.type === 'mob')
-    .forEach(item => {
-      for (var i = item.left; i < item.left + item.s.length; i++) {
-        dangerZone.push(i);
-      }
-    });
-  if (intersects(playerPos, dangerZone)) {
-    ALIVE = false;
-    setTimeout(gameOver, 1000)
-  }
+  mobs.forEach(mob => {
+    if (intersects(playerPos, mob.dangerZone) && !mob.dead) {
+      ALIVE = false;
+      setTimeout(gameOver, 1000)
+    }
+  });
 }
 
 function gameOver (win) {
@@ -146,8 +189,8 @@ function writeCentre (msg, offset) {
   term.nl(MIDHEIGHT).write(msg).nl(MIDHEIGHT);
 }
 
-function intersects (playerPos, dangerZone) {
-  if (dangerZone.indexOf(playerPos) !== -1 ) {
+function intersects (pos, dangerZone) {
+  if (dangerZone.indexOf(pos) !== -1 ) {
     return true;
   }
   return false;
@@ -185,9 +228,12 @@ process.stdin.on('keypress', function (chunk, key) {
     case 'right':
       player.left = Math.min(player.left + 1, WIDTH - RIGHTWALL);
     break;
+    case 'space':
+      gameState.push(new Bullet(player.left));
+    break;
   }
 });
-process.stdin.setRawMode(true); 
-process.stdin.resume();
+process.stdin.setRawMode(true);
+// process.stdin.resume();
 
 setInterval(runLoop, FRAMERATE);
