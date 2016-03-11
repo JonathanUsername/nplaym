@@ -34,7 +34,7 @@ Parser.parse = function (d) {
       return args;
     break;
     default:
-      const justLetters = d.replace(/[^a-zA-Z0-9]+/g, '');
+      const justLetters = d.toString().replace(/[^a-zA-Z0-9]+/g, '');
       const noColourCodes = justLetters.replace(/[\d]+m/, ' ');
       return noColourCodes;
     break;

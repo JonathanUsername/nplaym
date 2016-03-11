@@ -9,7 +9,7 @@ function paintScreen () {
 
   for (let line = 0; line < HEIGHT; line++) {
 
-    if (line === HEIGHT - 2) {
+    if (line === 1) {
       const out = npmOutput.replace(/\r?\n|\r/g, '');
       term.write(out);
       term.left(out.length)

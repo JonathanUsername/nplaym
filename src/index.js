@@ -1,5 +1,3 @@
-#!/usr/local/bin/node
-
 'use strict';
 
 import { startGame } from './game.js';

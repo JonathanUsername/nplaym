@@ -1,83 +1,51 @@
 #!/usr/local/bin/node
-
 'use strict';
 
-const term = require('node-terminal');
-const keypress = require('keypress');
-const colors = require('colors');
-const pty = require('pty.js');
-const fs = require('fs');
-const args = process.argv.slice(2);
+function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
-const HEIGHT = process.stdout.rows;
-const WIDTH = process.stdout.columns;
-const LEFTWALL = 10;
-const RIGHTWALL = 10;
-const MIDWIDTH = ~~(WIDTH / 2);
-const MIDHEIGHT = ~~(HEIGHT / 2);
-const FPS = 15;
-const FRAMERATE = ~~(1000 / FPS);
-const DIFFICULTY = 50; // out of 100
-const STARTTIME = new Date().getTime();
-const PLAYERLINE = ~~(HEIGHT / 4 + HEIGHT / 2);
-let ALIVE = true;
+var term = _interopDefault(require('node-terminal'));
+var keypress = _interopDefault(require('keypress'));
+var pty = _interopDefault(require('child_pty'));
+var _ = _interopDefault(require('lodash'));
+var colors = require('colors');
+var Q = _interopDefault(require('q'));
 
-if (fs.readdirSync('.').indexOf('node_modules') !== -1) {
-  console.log('You already have a node_modules directory here. NplayM currently only works for fresh installs.')
-  prcoess.exit(1)
-}
+var HEIGHT = process.stdout.rows;
+var WIDTH = process.stdout.columns;
+var LEFTWALL = 10;
+var RIGHTWALL = 10;
+var MIDWIDTH = ~ ~(WIDTH / 2);
+var MIDHEIGHT = ~ ~(HEIGHT / 2);
+var FPS = 15;
+var FRAMERATE = ~ ~(1000 / FPS);
+var DIFFICULTY = 50; // out of 100
+var STARTTIME = new Date().getTime();
+var PLAYERLINE = ~ ~(HEIGHT / 4 + HEIGHT / 2);
 
-var npm = pty.spawn('npm', args, {
-  cwd: process.cwd()
-})
-
-const installingPackages = {};
-
-npm.stdout.on('data', d => {
-  // New npm
-  const bits = d.toString().match(/:[a-zA-Z0-9\-_]+/)
-  if (bits) {
-    const packName = bits[0].slice(1);
-    installingPackages[packName] = 1;
+var utils = {
+  getRandom: function getRandom(arr) {
+    return arr[~ ~(Math.random() * arr.length)];
   }
-});
+};
 
-npm.stdout.on('end', d => {
-  gameOver(true);
-});
+function Monster(text) {
+  var _this = this;
 
-npm.on('close', d => {
-  gameOver(true);
-});
-
-let SCORE = 0;
-
-term.clear();
-
-const gameState = [{
-  type: 'player',
-  s: '^',
-  up: PLAYERLINE,
-  left: MIDWIDTH,
-  colour: 'blue'
-}];
-
-function Monster (text) {
   this.s = text;
   this.dangerZone = [];
 
-  this.getPlacement = () => {
-    let randomStart = ~~(Math.random() * (WIDTH - RIGHTWALL - LEFTWALL));
-    randomStart = Math.min(randomStart, WIDTH - this.s.length);
+  this.getPlacement = function () {
+    var randomStart = ~ ~(Math.random() * (WIDTH - RIGHTWALL - LEFTWALL));
+    randomStart = Math.min(randomStart, WIDTH - _this.s.length);
     randomStart = Math.max(randomStart, 0);
     return randomStart;
-  }
+  };
 
   this.createDangerZone = function () {
     for (var i = this.left; i < this.left + this.s.length; i++) {
       this.dangerZone.push(i);
     }
-  }
+  };
 
   Object.assign(this, {
     type: 'mob',
@@ -89,96 +57,279 @@ function Monster (text) {
   });
 
   this.createDangerZone();
-  this.tick = () => {
-    this.up = this.up + 1;
-    if (this.dead) {
-      this.turnToDebris();
+  this.tick = function () {
+    _this.up = _this.up + 1;
+    if (_this.dead) {
+      _this.turnToDebris();
     }
-  }
-  this.turnToDebris = () => {
-    let str = '';
-    for (var i = 0; i < this.s.length; i++) {
-      const debrisChoices = ';,.`\'"'.split('');
-      str += getRandom(debrisChoices);
+    if (_this.up > HEIGHT) {
+      _this.remove();
     }
-    this.s = str;
-    const colourChoices = ['yellow', 'grey', 'black'];
-    if (this.colour !== 'black') {
-      this.colour = colourChoices[this.colourIndex];
-      this.colourIndex++;
+  };
+  this.turnToDebris = function () {
+    var str = '';
+    for (var i = 0; i < _this.s.length; i++) {
+      var debrisChoices = ';,.`\'"'.split('');
+      str += utils.getRandom(debrisChoices);
     }
-  }
+    _this.s = str;
+    var colourChoices = ['yellow', 'grey', 'black'];
+    if (_this.colour !== 'black') {
+      _this.colour = colourChoices[_this.colourIndex];
+      _this.colourIndex++;
+    } else {
+      _this.remove();
+    }
+  };
+  this.remove = function () {
+    gameState.splice(gameState.indexOf(_this), 1);
+  };
 }
 
-function getRandom (arr) {
-  return arr[~~(Math.random() * arr.length)];
-}
+function Bullet(xCoord) {
+  var _this2 = this;
 
-function Bullet (xCoord) {
   this.type = 'bullet';
   this.left = xCoord;
   this.s = '|';
   this.colour = 'magenta';
   this.up = PLAYERLINE - 1;
   this.speed = 2;
-  this.tick = () => {
-    this.up = this.up - 1;
-  }
+  this.tick = function () {
+    _this2.up = _this2.up - 1;
+    if (_this2.dead) {
+      _this2.remove();
+    }
+  };
   this.dead = false;
+  this.remove = function () {
+    gameState.splice(gameState.indexOf(_this2), 1);
+  };
 }
 
-function isInstall (args) {
-  return args[0] === 'i' || args[0] === 'install';
+var setting = void 0;
+var args$1 = void 0;
+var Parser = {};
+
+Parser.set = function (terms) {
+  var strippedTerms = _.clone(terms);
+  _.remove(strippedTerms, function (i) {
+    return (/^-/.test(i)
+    );
+  });
+  if (strippedTerms[0] === 'install' || strippedTerms[0] === 'i') {
+    if (strippedTerms.length === 1) {
+      setting = 'npmInstall';
+    } else {
+      setting = 'npmInstallSomething';
+    }
+  } else {
+    setting = 'default';
+  }
+  args$1 = strippedTerms;
+};
+
+Parser.parse = function (d) {
+  switch (setting) {
+    case 'npmInstall':
+      var bits = d.toString().match(/:[a-zA-Z0-9\-_]+/);
+      if (bits) {
+        var packName = bits[0].slice(1);
+        return packName;
+      }
+      return utils.getRandom(args$1);
+      break;
+    case 'npmInstallSomething':
+      return args$1;
+      break;
+    default:
+      var justLetters = d.replace(/[^a-zA-Z0-9]+/g, '');
+      var noColourCodes = justLetters.replace(/[\d]+m/, ' ');
+      return noColourCodes;
+      break;
+  }
+};
+
+var args = process.argv.slice(2);
+
+Parser.set(args);
+
+var npmOutput = '';
+
+var npm = pty.spawn('npm', args, {
+  cwd: process.cwd()
+});
+
+var installingPackages = {};
+
+function startListening() {
+  npm.stdout.on('data', function (d) {
+    npmOutput = d.toString();
+    // We store it as keys in an object to uniq them
+    var output = Parser.parse(d);
+    if (!output) {
+      return;
+    }
+    var pkgs = output.split(' ');
+    pkgs.forEach(function (pkg) {
+      installingPackages[pkg] = 1;
+    });
+  });
+
+  npm.stdout.on('end', function (d) {
+    gameOver(true);
+  });
+
+  npm.on('close', function (d) {
+    gameOver(true);
+  });
+
+  keypress(process.stdin);
+  process.stdin.on('keypress', function (chunk, key) {
+    if (!key) return;
+    if (key.ctrl && key.name == 'c') process.exit(1);
+    switch (key.name) {
+      case 'left':
+        player.left = Math.max(player.left - 1, LEFTWALL);
+        break;
+      case 'right':
+        player.left = Math.min(player.left + 1, WIDTH - RIGHTWALL);
+        break;
+      case 'space':
+        fire();
+        break;
+    }
+  });
+
+  process.stdin.setRawMode(true);
+  process.stdin.resume();
 }
 
-function paintScreen () {
-  for (let line = 0; line < HEIGHT; line++) {
+function paintScreen() {
+
+  for (var line = 0; line < HEIGHT; line++) {
+
+    if (line === HEIGHT - 2) {
+      var out = npmOutput.replace(/\r?\n|\r/g, '');
+      term.write(out);
+      term.left(out.length);
+    }
 
     if (line === 4) {
       setScore();
       term.write(SCORE);
-      const scoreWidth = SCORE.toString().length;
+      var scoreWidth = SCORE.toString().length;
       term.left(scoreWidth);
     }
 
-    paintMovers(line)
+    paintMovers(line);
 
     term.nl();
   }
 
-  gameState.filter(item => item.type === 'bullet' || item.type === 'mob')
-    .forEach(item => {
-      item.tick();
-    })
+  gameState.filter(function (item) {
+    return item.type === 'bullet' || item.type === 'mob';
+  }).forEach(function (item) {
+    item.tick();
+  });
 }
 
-function cursorReturn (item) {
-  term.left(item.left + item.s.length)
+function cursorReturn(item) {
+  term.left(item.left + item.s.length);
 }
 
-function paintMovers (line) {
-  const entities = gameState.filter(item => item.up === line).sort((a, b) => a.left > b.left);
-
+function paintMovers(line) {
+  var entities = gameState.filter(function (item) {
+    return item.up === line;
+  }).sort(function (a, b) {
+    return a.left > b.left;
+  });
 
   if (entities.length > 0) {
-    entities.forEach(item => {
+    entities.forEach(function (item) {
       term.right(item.left).write(item.s[item.colour]);
-      cursorReturn(item)
-    })
+      cursorReturn(item);
+    });
     checkBullet(line, entities);
     if (line === PLAYERLINE) {
-      checkIntersects(line, entities)
+      checkIntersects(line, entities);
     }
   }
 }
 
+function writeCentre(msg, offset) {
+  term.nl(MIDHEIGHT).write(msg).nl(MIDHEIGHT);
+}
+
+function startSequence() {
+  // TODO: Sort out this callback cancer
+  var deferred = Q.defer();
+
+  var _loop = function _loop(i) {
+    setTimeout(function () {
+      var str = ' '.repeat(i) + player.s[player.colour];
+      term.write(str);
+      term.left(str.length);
+      if (i === MIDWIDTH) {
+        var _loop2 = function _loop2(j) {
+          setTimeout(function () {
+            term.left(str.length);
+            term.clearLine().nl().write(str);
+            if (j === PLAYERLINE - 1) {
+              var _loop3 = function _loop3(k) {
+                setTimeout(function () {
+                  term.nl();
+                  if (k === HEIGHT - PLAYERLINE - 1) {
+                    deferred.resolve();
+                  }
+                }, 20 * k);
+              };
+
+              for (var k = 0; k < HEIGHT - PLAYERLINE; k++) {
+                _loop3(k);
+              }
+            }
+          }, 20 * j);
+        };
+
+        for (var j = 0; j < PLAYERLINE; j++) {
+          _loop2(j);
+        }
+      }
+    }, 10 * i);
+  };
+
+  for (var i = 0; i < MIDWIDTH + 1; i++) {
+    _loop(i);
+  }
+  return deferred.promise;
+}
+
+var SCORE = 0;
+var ALIVE = true;
+var LOOP = void 0;
+
+var gameState = [{
+  type: 'player',
+  s: '^',
+  up: PLAYERLINE,
+  left: MIDWIDTH,
+  colour: 'blue'
+}];
+
+var player = gameState[0];
+
 function checkBullet(line, entities) {
-  const bullets = entities.filter(i => i.type === 'bullet');
-  const mobs = entities.filter(i => i.type === 'mob');
-  const bulletsToGo = [];
-  bullets.forEach((bullet, bi) => {
+  var bullets = entities.filter(function (i) {
+    return i.type === 'bullet';
+  });
+  var mobs = entities.filter(function (i) {
+    return i.type === 'mob';
+  });
+  var bulletsToGo = [];
+  bullets.forEach(function (bullet, bi) {
     // console.log(item.left, dangerZone)
-    mobs.forEach((mob, mi) => {
+    mobs.forEach(function (mob, mi) {
       if (intersects(bullet.left, mob.dangerZone) && !bullet.dead && !mob.dead) {
         bullet.dead = true;
         bullet.colour = 'black';
@@ -186,80 +337,71 @@ function checkBullet(line, entities) {
         mob.dead = true;
         mob.colour = 'yellow';
       }
-    })
-  })
-} 
+    });
+  });
+}
 
-function checkIntersects (line, entities) {
-  const playerPos = entities.find(item => item.type === 'player').left;
-  const mobs = entities.filter(i => i.type === 'mob');
-  const dangerZone = [];
-  mobs.forEach(mob => {
+function checkIntersects(line, entities) {
+  var playerPos = entities.find(function (item) {
+    return item.type === 'player';
+  }).left;
+  var mobs = entities.filter(function (i) {
+    return i.type === 'mob';
+  });
+  var dangerZone = [];
+  mobs.forEach(function (mob) {
     if (intersects(playerPos, mob.dangerZone) && !mob.dead) {
       ALIVE = false;
-      setTimeout(gameOver, 1000)
+      setTimeout(gameOver$1, 1000);
     }
   });
 }
 
-function gameOver (win) {
+function gameOver$1(win) {
   if (win) {
-    writeCentre(`You win! Packages installed! Your score was ${SCORE}.`);
+    writeCentre('You win! Packages installed! Your score was ' + SCORE + '.');
   } else {
-    writeCentre(`You lose! Give up, go home, and sell your keyboard on ebay.\nNo packages have been installed but then I'm sure you've got used to failure by now.\n\nYour score was ${SCORE}.`);
+    writeCentre('You lose! Give up, go home, and sell your keyboard on ebay.\nNo packages have been installed but then I\'m sure you\'ve got used to failure by now.\n\nYour score was ' + SCORE + '.');
   }
   process.exit(0);
 }
 
-function writeCentre (msg, offset) {
-  term.nl(MIDHEIGHT).write(msg).nl(MIDHEIGHT);
-}
-
-function intersects (pos, dangerZone) {
-  if (dangerZone.indexOf(pos) !== -1 ) {
+function intersects(pos, dangerZone) {
+  if (dangerZone.indexOf(pos) !== -1) {
     return true;
   }
   return false;
 }
 
-function generateScene () {
-  const packages = Object.keys(installingPackages);
-  if (packages.length > 0 && (Math.random() * 100) < DIFFICULTY) {
-    const lastMsg = packages.pop();
+function generateScene() {
+  var packages = Object.keys(installingPackages);
+  if (packages.length > 0 && Math.random() * 100 < DIFFICULTY) {
+    var lastMsg = packages.pop();
     gameState.push(new Monster(lastMsg));
   }
 }
 
-function setScore () {
+function setScore() {
   SCORE = new Date().getTime() - STARTTIME;
 }
 
-function runLoop () {
+function startGame() {
+  startSequence().then(function () {
+    LOOP = setInterval(runLoop, FRAMERATE);
+  });
+}
+
+function fire() {
+  gameState.push(new Bullet(player.left));
+}
+
+function runLoop() {
   if (ALIVE) {
-    term.clear();
+    // term.clear();
     generateScene();
     paintScreen();
   }
 };
 
-keypress(process.stdin);
-process.stdin.on('keypress', function (chunk, key) {
-  if (!key) return; 
-  if (key.ctrl && key.name == 'c') process.exit(1);
-  const player = gameState.find(i => i.type === 'player');
-  switch (key.name) {
-    case 'left':
-      player.left = Math.max(player.left - 1, LEFTWALL);
-    break;
-    case 'right':
-      player.left = Math.min(player.left + 1, WIDTH - RIGHTWALL);
-    break;
-    case 'space':
-      gameState.push(new Bullet(player.left));
-    break;
-  }
-});
-process.stdin.setRawMode(true);
-// process.stdin.resume();
-
-setInterval(runLoop, FRAMERATE);
+startListening();
+startGame();
