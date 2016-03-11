@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/util.js"],"names":[],"mappings":";;;;;;AACA,IAAM,QAAQ;AACZ,aAAW,mBAAU,GAAV,EAAe;AACxB,WAAO,IAAI,EAAC,EAAE,KAAK,MAAL,KAAgB,IAAI,MAAJ,CAAlB,CAAZ,CADwB;GAAf;CADP;;kBAMS","file":"util.js","sourcesContent":["\nconst utils = {\n  getRandom: function (arr) {\n    return arr[~~(Math.random() * arr.length)];\n  }\n};\n\nexport default utils;"]}

@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/index.js"],"names":[],"mappings":";;AAEA;;AAEA;;AACA;;AAEA;AACA","file":"index.js","sourcesContent":["\n\n'use strict';\n\nimport { startGame } from './game.js';\nimport { startListening } from './io.js';\n\nstartListening();\nstartGame();\n"]}

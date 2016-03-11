@@ -1,11 +1,12 @@
 #!/usr/local/bin/node
 
-'use strict'
+'use strict';
 
 const term = require('node-terminal');
 const keypress = require('keypress');
 const colors = require('colors');
 const pty = require('pty.js');
+const fs = require('fs');
 const args = process.argv.slice(2);
 
 const HEIGHT = process.stdout.rows;
@@ -20,6 +21,11 @@ const DIFFICULTY = 50; // out of 100
 const STARTTIME = new Date().getTime();
 const PLAYERLINE = ~~(HEIGHT / 4 + HEIGHT / 2);
 let ALIVE = true;
+
+if (fs.readdirSync('.').indexOf('node_modules') !== -1) {
+  console.log('You already have a node_modules directory here. NplayM currently only works for fresh installs.')
+  prcoess.exit(1)
+}
 
 var npm = pty.spawn('npm', args, {
   cwd: process.cwd()
@@ -202,7 +208,7 @@ function gameOver (win) {
   } else {
     writeCentre(`You lose! Give up, go home, and sell your keyboard on ebay.\nNo packages have been installed but then I'm sure you've got used to failure by now.\n\nYour score was ${SCORE}.`);
   }
-  process.exit();
+  process.exit(0);
 }
 
 function writeCentre (msg, offset) {
@@ -239,7 +245,7 @@ function runLoop () {
 keypress(process.stdin);
 process.stdin.on('keypress', function (chunk, key) {
   if (!key) return; 
-  if (key.ctrl && key.name == 'c') process.exit();
+  if (key.ctrl && key.name == 'c') process.exit(1);
   const player = gameState.find(i => i.type === 'player');
   switch (key.name) {
     case 'left':
