@@ -3,26 +3,27 @@ import { SCORE, setScore, checkIntersects, checkBullet, gameState, player } from
 import { npmOutput } from './io.js';
 import colors from 'colors';
 import term from 'node-terminal';
-import Q from 'q';
 
 function paintScreen () {
 
   for (let line = 0; line < HEIGHT; line++) {
 
-    if (line === 1) {
-      const out = npmOutput.replace(/\r?\n|\r/g, '');
-      term.write(out);
-      term.left(out.length)
-    }
-
-    if (line === 4) {
-      setScore();
-      term.write(SCORE);
-      const scoreWidth = SCORE.toString().length;
-      term.left(scoreWidth);
-    }
-
     paintMovers(line)
+
+    if (line === 1) {
+      // Replace control chars, letters and numbers
+      const out = npmOutput.replace(/[\x00-\x1F\x7F-\x9Fa-zA-Z0-9\?\[:\s]/g, '');
+      const progressTxt = `NPM: ${out}`;
+      term.write(progressTxt);
+      term.left(progressTxt.length)
+    }
+
+    if (line === 2) {
+      setScore();
+      const scoreTxt = `Score: ${SCORE}`;
+      term.write(scoreTxt);
+      term.left(scoreTxt.length);
+    }
 
     term.nl();
   }
@@ -56,35 +57,39 @@ function writeCentre (msg, offset) {
   term.nl(MIDHEIGHT).write(msg).nl(MIDHEIGHT);
 }
 
-function startSequence () {
+function startSequence (startGameFn) {
+
   // TODO: Sort out this callback cancer
-  const deferred = Q.defer();
   for (let i = 0; i < MIDWIDTH + 1; i++) {
     setTimeout(function () {
-      const str = ' '.repeat(i) + player.s[player.colour];
+      let str = ' '.repeat(i) + '>'.blue;
       term.write(str);
       term.left(str.length)
+
       if (i === MIDWIDTH) {
+        str = ' '.repeat(i) + '^'.blue;
         for (let j = 0; j < PLAYERLINE; j++) {
           setTimeout(function () {
-            term.left(str.length)
             term.clearLine().nl().write(str)
+
             if (j === PLAYERLINE - 1) {
               for (let k = 0; k < HEIGHT - PLAYERLINE; k++) {
                 setTimeout(function () { 
                   term.nl();
                   if (k === HEIGHT - PLAYERLINE - 1) {
-                    deferred.resolve();
+                    startGameFn()
                   }
                 }, 20 * k)
               }
             }
+
           }, 20 * j)
         }
       }
+
     }, 10 * i)
   }
-  return deferred.promise;
+
 }
 
 

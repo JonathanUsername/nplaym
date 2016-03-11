@@ -8,7 +8,6 @@ var keypress = _interopDefault(require('keypress'));
 var pty = _interopDefault(require('child_pty'));
 var _ = _interopDefault(require('lodash'));
 var colors = require('colors');
-var Q = _interopDefault(require('q'));
 
 var HEIGHT = process.stdout.rows;
 var WIDTH = process.stdout.columns;
@@ -143,7 +142,7 @@ Parser.parse = function (d) {
       return args$1;
       break;
     default:
-      var justLetters = d.replace(/[^a-zA-Z0-9]+/g, '');
+      var justLetters = d.toString().replace(/[^a-zA-Z0-9]+/g, '');
       var noColourCodes = justLetters.replace(/[\d]+m/, ' ');
       return noColourCodes;
       break;
@@ -164,8 +163,11 @@ var installingPackages = {};
 
 function startListening() {
   npm.stdout.on('data', function (d) {
-    npmOutput = d.toString();
-    // We store it as keys in an object to uniq them
+    var str = d.toString();
+    if (str.length > 5) {
+      npmOutput = str;
+    }
+    // We store it as keys in an object to quickly uniq them
     var output = Parser.parse(d);
     if (!output) {
       return;
@@ -184,6 +186,20 @@ function startListening() {
     gameOver(true);
   });
 
+  process.stdin.setRawMode(true);
+
+  // process.stdin.on('data', (chunk) => {
+  //   if (chunk !== null) {
+  //     const str = chunk.toString('utf-8');
+  //     console.log(str)
+  //     if (str === ' ' || str === '\x1b ') return fire(); // Space
+  //     const parts = /^(?:\x1b+)(O|N|\[|\[\[)(?:(\d+)(?:;(\d+))?([~^$])|(?:1;)?(\d+)?([a-zA-Z]))/.exec(str);
+  //     const code = (parts[1] || '') + (parts[2] || '') + (parts[4] || '') + (parts[6] || '')
+  //     if (code === 'OD') return player.left = Math.max(player.left - 1, LEFTWALL); // Left
+  //     if (code === 'OC') return player.left = Math.min(player.left + 1, WIDTH - RIGHTWALL); // Right
+  //   }
+  // })
+
   keypress(process.stdin);
   process.stdin.on('keypress', function (chunk, key) {
     if (!key) return;
@@ -200,29 +216,28 @@ function startListening() {
         break;
     }
   });
-
-  process.stdin.setRawMode(true);
-  process.stdin.resume();
 }
 
 function paintScreen() {
 
   for (var line = 0; line < HEIGHT; line++) {
 
-    if (line === HEIGHT - 2) {
-      var out = npmOutput.replace(/\r?\n|\r/g, '');
-      term.write(out);
-      term.left(out.length);
-    }
-
-    if (line === 4) {
-      setScore();
-      term.write(SCORE);
-      var scoreWidth = SCORE.toString().length;
-      term.left(scoreWidth);
-    }
-
     paintMovers(line);
+
+    if (line === 1) {
+      // Replace control chars, letters and numbers
+      var out = npmOutput.replace(/[\x00-\x1F\x7F-\x9Fa-zA-Z0-9\?\[:\s]/g, '');
+      var progressTxt = 'NPM: ' + out;
+      term.write(progressTxt);
+      term.left(progressTxt.length);
+    }
+
+    if (line === 2) {
+      setScore();
+      var scoreTxt = 'Score: ' + SCORE;
+      term.write(scoreTxt);
+      term.left(scoreTxt.length);
+    }
 
     term.nl();
   }
@@ -261,26 +276,26 @@ function writeCentre(msg, offset) {
   term.nl(MIDHEIGHT).write(msg).nl(MIDHEIGHT);
 }
 
-function startSequence() {
-  // TODO: Sort out this callback cancer
-  var deferred = Q.defer();
-
+function startSequence(startGameFn) {
   var _loop = function _loop(i) {
     setTimeout(function () {
-      var str = ' '.repeat(i) + player.s[player.colour];
+      var str = ' '.repeat(i) + '>'.blue;
       term.write(str);
       term.left(str.length);
+
       if (i === MIDWIDTH) {
+        str = ' '.repeat(i) + '^'.blue;
+
         var _loop2 = function _loop2(j) {
           setTimeout(function () {
-            term.left(str.length);
             term.clearLine().nl().write(str);
+
             if (j === PLAYERLINE - 1) {
               var _loop3 = function _loop3(k) {
                 setTimeout(function () {
                   term.nl();
                   if (k === HEIGHT - PLAYERLINE - 1) {
-                    deferred.resolve();
+                    startGameFn();
                   }
                 }, 20 * k);
               };
@@ -299,10 +314,10 @@ function startSequence() {
     }, 10 * i);
   };
 
+  // TODO: Sort out this callback cancer
   for (var i = 0; i < MIDWIDTH + 1; i++) {
     _loop(i);
   }
-  return deferred.promise;
 }
 
 var SCORE = 0;
@@ -352,12 +367,12 @@ function checkIntersects(line, entities) {
   mobs.forEach(function (mob) {
     if (intersects(playerPos, mob.dangerZone) && !mob.dead) {
       ALIVE = false;
-      setTimeout(gameOver$1, 1000);
+      setTimeout(gameOver, 1000);
     }
   });
 }
 
-function gameOver$1(win) {
+function gameOver(win) {
   if (win) {
     writeCentre('You win! Packages installed! Your score was ' + SCORE + '.');
   } else {
@@ -386,7 +401,7 @@ function setScore() {
 }
 
 function startGame() {
-  startSequence().then(function () {
+  startSequence(function () {
     LOOP = setInterval(runLoop, FRAMERATE);
   });
 }

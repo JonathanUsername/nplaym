@@ -77,7 +77,7 @@ function setScore () {
 }
 
 function startGame () {
-  startSequence().then(() => {
+  startSequence(function () {
     LOOP = setInterval(runLoop, FRAMERATE);
   })
 }
@@ -94,4 +94,4 @@ function runLoop () {
   }
 };
 
-export { gameState, checkIntersects, checkBullet, SCORE, setScore, startGame, fire, player };
+export { gameState, checkIntersects, checkBullet, SCORE, setScore, startGame, fire, player, gameOver };
