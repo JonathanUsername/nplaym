@@ -82,6 +82,10 @@ var terminal = {
     clearCharacters: function(n) {
         this.write(new Array(n + 2).join(' ')).left(n + 2);
         return this;
+    },
+
+    hideCursor: function() {
+        process.stdout.write(this.escape_code + '[?25l');
     }
 };
 

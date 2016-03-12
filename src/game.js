@@ -1,5 +1,5 @@
 import { HEIGHT, WIDTH, LEFTWALL, RIGHTWALL, MIDWIDTH, MIDHEIGHT, FPS, FRAMERATE, DIFFICULTY, STARTTIME, PLAYERLINE } from './constants.js';
-import term from 'node-terminal';
+import term from './terminal.js';
 import { Monster, Bullet } from './classes.js';
 import { writeCentre, paintScreen, startSequence } from './display.js';
 import { installingPackages } from './io.js';
@@ -31,6 +31,7 @@ function checkBullet(line, entities) {
         mob.s = 'x'.repeat(mob.s.length);
         mob.dead = true;
         mob.colour = 'yellow';
+        addScore(mob.s.length);
       }
     })
   })
@@ -72,8 +73,8 @@ function generateScene () {
   }
 }
 
-function setScore () {
-  SCORE = new Date().getTime() - STARTTIME;
+function addScore (int) {
+  SCORE = SCORE + int;
 }
 
 function startGame () {
@@ -94,4 +95,4 @@ function runLoop () {
   }
 };
 
-export { gameState, checkIntersects, checkBullet, SCORE, setScore, startGame, fire, player, gameOver };
+export { gameState, checkIntersects, checkBullet, SCORE, addScore, startGame, fire, player, gameOver };

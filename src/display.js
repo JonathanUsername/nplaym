@@ -1,8 +1,8 @@
 import { HEIGHT, WIDTH, LEFTWALL, RIGHTWALL, MIDWIDTH, MIDHEIGHT, FPS, FRAMERATE, DIFFICULTY, STARTTIME, PLAYERLINE } from './constants.js';
-import { SCORE, setScore, checkIntersects, checkBullet, gameState, player } from './game.js';
+import { SCORE, checkIntersects, checkBullet, gameState, player } from './game.js';
 import { npmOutput } from './io.js';
 import colors from 'colors';
-import term from 'node-terminal';
+import term from './terminal.js';
 
 function paintScreen () {
 
@@ -19,7 +19,6 @@ function paintScreen () {
     }
 
     if (line === 2) {
-      setScore();
       const scoreTxt = `Score: ${SCORE}`;
       term.write(scoreTxt);
       term.left(scoreTxt.length);

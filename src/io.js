@@ -3,7 +3,7 @@ import keypress from 'keypress';
 import pty from 'child_pty';
 import { fire, player, gameOver } from './game.js'
 import argsparse from './parser.js'
-import term from 'node-terminal';
+import term from './terminal.js';
 
 const args = process.argv.slice(2);
 
@@ -28,7 +28,12 @@ function startListening () {
     if (!output) {
       return;
     }
-    const pkgs = output.split(' ');
+    let pkgs;
+    if (typeof output === 'string') {
+      pkgs = output.split(' ');
+    } else {
+      pkgs = output;
+    }
     pkgs.forEach(pkg => {
       installingPackages[pkg] = 1;
     })
@@ -48,6 +53,8 @@ function startListening () {
 
   process.stdin.setRawMode(true);
 
+  term.hideCursor();
+
   keypress(process.stdin);
 
   process.stdin.on('keypress', function (chunk, key) {
@@ -58,12 +65,15 @@ function startListening () {
     }
     switch (key.name) {
       case 'left':
+        term.right(1);
         player.left = Math.max(player.left - 1, LEFTWALL);
       break;
       case 'right':
+        term.left(1);
         player.left = Math.min(player.left + 1, WIDTH - RIGHTWALL);
       break;
       case 'space':
+        term.left(1);
         fire();
       break;
     }

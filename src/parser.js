@@ -31,6 +31,11 @@ Parser.parse = function (d) {
       return util.getRandom(args);
     break;
     case 'npmInstallSomething':
+      const bits = d.toString().match(/:[a-zA-Z0-9\-_]+/)
+      if (bits) {
+        const packName = bits[0].slice(1);
+        return packName;
+      }
       return args;
     break;
     default:
