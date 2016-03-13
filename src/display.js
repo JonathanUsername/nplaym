@@ -25,7 +25,7 @@ function paintScreen () {
       term.left(scoreTxt.length);
     }
 
-    term.nl();
+    term.down(1);
   }
 
   gameState.filter(item => item.type === 'bullet' || item.type === 'mob')
@@ -38,17 +38,22 @@ function cursorReturn (item) {
   term.left(item.left + item.s.length)
 }
 
+function getEntities (line) {
+  return gameState.filter(item => item.up === line).sort((a, b) => a.left > b.left);
+}
+
 function paintMovers (line) {
-  const entities = gameState.filter(item => item.up === line).sort((a, b) => a.left > b.left);
+  const entities = getEntities(line);
+  const bulletsBelow = gameState.filter(item => item.up === line + 1 && item.type === 'bullet');
 
   if (entities.length > 0) {
     entities.forEach(item => {
       term.right(item.left).write(item.s[item.colour]);
       cursorReturn(item)
     })
-    checkBullet(line, entities);
+    checkBullet(entities.concat(bulletsBelow));
     if (line === PLAYERLINE) {
-      checkIntersects(line, entities)
+      checkIntersects(entities)
     }
   }
 }

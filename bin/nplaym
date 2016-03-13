@@ -90,7 +90,7 @@ var terminal = {
 
     // Clear all characters from the terminal screen
     clear: function clear() {
-        process.stdout.write(this.escape_code + '[2J');
+        process.stdout.write(this.escape_code + '[2J' + this.escape_code + '[;H');
         return this;
     },
 
@@ -108,6 +108,10 @@ var terminal = {
 
     hideCursor: function hideCursor() {
         process.stdout.write(this.escape_code + '[?25l');
+    },
+
+    showCursor: function showCursor() {
+        process.stdout.write(this.escape_code + '[?25h');
     }
 };
 
@@ -288,6 +292,7 @@ function startListening() {
 
   process.on('exit', function () {
     npm.kill('SIGINT');
+    terminal.showCursor();
   });
 
   process.stdin.setRawMode(true);
@@ -299,7 +304,6 @@ function startListening() {
   process.stdin.on('keypress', function (chunk, key) {
     if (!key) return;
     if (key.ctrl && key.name == 'c') {
-      npm.kill('SIGINT');
       process.exit(1);
     }
     switch (key.name) {
@@ -320,6 +324,7 @@ function startListening() {
 }
 
 function paintScreen() {
+  terminal.clear();
 
   for (var line = 0; line < HEIGHT; line++) {
 
@@ -489,7 +494,7 @@ function intersects(pos, dangerZone) {
   return false;
 }
 
-function generateScene() {
+function generateMobs() {
   var packages = Object.keys(installingPackages);
   if (packages.length > 0 && Math.random() * 100 < DIFFICULTY) {
     var lastMsg = packages.pop();
@@ -503,7 +508,7 @@ function addScore(int) {
 
 function startGame() {
   startSequence(function () {
-    LOOP = setInterval(runLoop, FRAMERATE);
+    LOOP = interval(runLoop, FRAMERATE);
   });
 }
 
@@ -511,10 +516,28 @@ function fire() {
   gameState.push(new Bullet(player.left));
 }
 
+function interval(func, wait, times) {
+  var interv = function (w, t) {
+    return function () {
+      if (typeof t === "undefined" || t-- > 0) {
+        setTimeout(interv, w);
+        try {
+          func.call(null);
+        } catch (e) {
+          t = 0;
+          throw e.toString();
+        }
+      }
+    };
+  }(wait, times);
+
+  setTimeout(interv, wait);
+};
+
 function runLoop() {
   if (ALIVE) {
     // term.clear();
-    generateScene();
+    generateMobs();
     paintScreen();
   }
 };

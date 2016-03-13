@@ -1,6 +1,6 @@
 {
   "name": "nplaym",
-  "version": "1.3.0",
+  "version": "1.3.2",
   "description": "A wrapper for npm so you can play a Space-Invaders-a-like game while installing.",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

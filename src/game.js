@@ -18,7 +18,7 @@ const gameState = [{
 
 const player = gameState[0];
 
-function checkBullet(line, entities) {
+function checkBullet(entities) {
   const bullets = entities.filter(i => i.type === 'bullet');
   const mobs = entities.filter(i => i.type === 'mob');
   const bulletsToGo = [];
@@ -37,10 +37,9 @@ function checkBullet(line, entities) {
   })
 } 
 
-function checkIntersects (line, entities) {
+function checkIntersects (entities) {
   const playerPos = entities.find(item => item.type === 'player').left;
   const mobs = entities.filter(i => i.type === 'mob');
-  const dangerZone = [];
   mobs.forEach(mob => {
     if (intersects(playerPos, mob.dangerZone) && !mob.dead) {
       ALIVE = false;
