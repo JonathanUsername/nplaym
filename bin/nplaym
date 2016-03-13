@@ -3,7 +3,6 @@
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
-var term = _interopDefault(require('node-terminal'));
 var keypress = _interopDefault(require('keypress'));
 var pty = _interopDefault(require('child_pty'));
 var _ = _interopDefault(require('lodash'));
@@ -21,6 +20,96 @@ var FRAMERATE = ~ ~(1000 / FPS);
 var DIFFICULTY = 50; // out of 100
 var STARTTIME = new Date().getTime();
 var PLAYERLINE = ~ ~(HEIGHT / 4 + HEIGHT / 2);
+
+// Terminal object
+// Allows for controlling the terminal by outputting control characters
+var terminal = {
+    // Terminal escape character
+    // escape_code: '\033',
+    escape_code: '\x1B',
+
+    // Display attributes reset
+    // reset_code: '\033[0m',
+    reset_code: '\x1B[0m',
+
+    // Write a message in the terminal
+    write: function write(message) {
+        process.stdout.write(message);
+        return this;
+    },
+
+    // Print one or more new line characters
+    nl: function nl(n) {
+        n = n || 1;
+        for (var i = 0; i < n; i++) {
+            process.stdout.write('\n');
+        }
+        return this;
+    },
+
+    // Move the terminal cursor
+    move: function move(x, y) {
+        x = x || 0;
+        y = y || 0;
+
+        var command = this.escape_code + '[';
+        if (undefined !== x && 0 < x) {
+            command += ++x;
+        }
+        if (undefined !== y && 0 < y) {
+            command += ';' + ++y;
+        }
+
+        process.stdout.write(command + 'H');
+        return this;
+    },
+
+    // Move the terminal cursor up `x` positions
+    up: function up(x) {
+        process.stdout.write(this.escape_code + '[' + x + 'A');
+        return this;
+    },
+
+    // Move the terminal cursor down x positions
+    down: function down(x) {
+        process.stdout.write(this.escape_code + '[' + x + 'B');
+        return this;
+    },
+
+    // Move the terminal cursor `p` positions right
+    right: function right(p) {
+        process.stdout.write(this.escape_code + '[' + p + 'C');
+        return this;
+    },
+
+    // Move the terminal cursor `p` positions left
+    left: function left(p) {
+        process.stdout.write(this.escape_code + '[' + p + 'D');
+        return this;
+    },
+
+    // Clear all characters from the terminal screen
+    clear: function clear() {
+        process.stdout.write(this.escape_code + '[2J');
+        return this;
+    },
+
+    // Clear the line the cursor is at
+    clearLine: function clearLine() {
+        process.stdout.write(this.escape_code + '[2K');
+        return this;
+    },
+
+    // Clear the next `n` characters from the current cursor position.
+    clearCharacters: function clearCharacters(n) {
+        this.write(new Array(n + 2).join(' ')).left(n + 2);
+        return this;
+    },
+
+    hideCursor: function hideCursor() {
+        process.stdout.write(this.escape_code + '[?25l');
+    }
+};
 
 var utils = {
   getRandom: function getRandom(arr) {
@@ -140,6 +229,11 @@ Parser.parse = function (d) {
       return utils.getRandom(args$1);
       break;
     case 'npmInstallSomething':
+      var moreBits = d.toString().match(/:[a-zA-Z0-9\-_]+/);
+      if (moreBits) {
+        var depName = moreBits[0].slice(1);
+        return depName;
+      }
       return args$1;
       break;
     default:
@@ -173,7 +267,12 @@ function startListening() {
     if (!output) {
       return;
     }
-    var pkgs = output.split(' ');
+    var pkgs = void 0;
+    if (typeof output === 'string') {
+      pkgs = output.split(' ');
+    } else {
+      pkgs = output;
+    }
     pkgs.forEach(function (pkg) {
       installingPackages[pkg] = 1;
     });
@@ -193,6 +292,8 @@ function startListening() {
 
   process.stdin.setRawMode(true);
 
+  terminal.hideCursor();
+
   keypress(process.stdin);
 
   process.stdin.on('keypress', function (chunk, key) {
@@ -203,12 +304,15 @@ function startListening() {
     }
     switch (key.name) {
       case 'left':
+        terminal.right(1);
         player.left = Math.max(player.left - 1, LEFTWALL);
         break;
       case 'right':
+        terminal.left(1);
         player.left = Math.min(player.left + 1, WIDTH - RIGHTWALL);
         break;
       case 'space':
+        terminal.left(1);
         fire();
         break;
     }
@@ -225,18 +329,17 @@ function paintScreen() {
       // Replace control chars, letters and numbers
       var out = npmOutput.replace(/[\x00-\x1F\x7F-\x9Fa-zA-Z0-9\?\[:\s]/g, '');
       var progressTxt = 'NPM: ' + out;
-      term.write(progressTxt);
-      term.left(progressTxt.length);
+      terminal.write(progressTxt);
+      terminal.left(progressTxt.length);
     }
 
     if (line === 2) {
-      setScore();
       var scoreTxt = 'Score: ' + SCORE;
-      term.write(scoreTxt);
-      term.left(scoreTxt.length);
+      terminal.write(scoreTxt);
+      terminal.left(scoreTxt.length);
     }
 
-    term.nl();
+    terminal.nl();
   }
 
   gameState.filter(function (item) {
@@ -247,7 +350,7 @@ function paintScreen() {
 }
 
 function cursorReturn(item) {
-  term.left(item.left + item.s.length);
+  terminal.left(item.left + item.s.length);
 }
 
 function paintMovers(line) {
@@ -259,7 +362,7 @@ function paintMovers(line) {
 
   if (entities.length > 0) {
     entities.forEach(function (item) {
-      term.right(item.left).write(item.s[item.colour]);
+      terminal.right(item.left).write(item.s[item.colour]);
       cursorReturn(item);
     });
     checkBullet(line, entities);
@@ -270,27 +373,27 @@ function paintMovers(line) {
 }
 
 function writeCentre(msg, offset) {
-  term.nl(MIDHEIGHT).write(msg).nl(MIDHEIGHT);
+  terminal.nl(MIDHEIGHT).write(msg).nl(MIDHEIGHT);
 }
 
 function startSequence(startGameFn) {
   var _loop = function _loop(i) {
     setTimeout(function () {
       var str = ' '.repeat(i) + '>'.blue;
-      term.write(str);
-      term.left(str.length);
+      terminal.write(str);
+      terminal.left(str.length);
 
       if (i === MIDWIDTH) {
         str = ' '.repeat(i) + '^'.blue;
 
         var _loop2 = function _loop2(j) {
           setTimeout(function () {
-            term.clearLine().nl().write(str);
+            terminal.clearLine().nl().write(str);
 
             if (j === PLAYERLINE - 1) {
               var _loop3 = function _loop3(k) {
                 setTimeout(function () {
-                  term.nl();
+                  terminal.nl();
                   if (k === HEIGHT - PLAYERLINE - 1) {
                     startGameFn();
                   }
@@ -348,6 +451,7 @@ function checkBullet(line, entities) {
         mob.s = 'x'.repeat(mob.s.length);
         mob.dead = true;
         mob.colour = 'yellow';
+        addScore(mob.s.length);
       }
     });
   });
@@ -393,8 +497,8 @@ function generateScene() {
   }
 }
 
-function setScore() {
-  SCORE = new Date().getTime() - STARTTIME;
+function addScore(int) {
+  SCORE = SCORE + int;
 }
 
 function startGame() {

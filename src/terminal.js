@@ -90,4 +90,4 @@ var terminal = {
 };
 
 // Export the command object
-module.exports = terminal;
+export default terminal;

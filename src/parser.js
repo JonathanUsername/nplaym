@@ -31,10 +31,10 @@ Parser.parse = function (d) {
       return util.getRandom(args);
     break;
     case 'npmInstallSomething':
-      const bits = d.toString().match(/:[a-zA-Z0-9\-_]+/)
-      if (bits) {
-        const packName = bits[0].slice(1);
-        return packName;
+      const moreBits = d.toString().match(/:[a-zA-Z0-9\-_]+/)
+      if (moreBits) {
+        const depName = moreBits[0].slice(1);
+        return depName;
       }
       return args;
     break;
