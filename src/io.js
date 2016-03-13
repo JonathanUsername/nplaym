@@ -49,6 +49,7 @@ function startListening () {
 
   process.on('exit', function () {
     npm.kill('SIGINT');
+    term.showCursor();
   });
 
   process.stdin.setRawMode(true);
@@ -60,7 +61,6 @@ function startListening () {
   process.stdin.on('keypress', function (chunk, key) {
     if (!key) return; 
     if (key.ctrl && key.name == 'c') {
-      npm.kill('SIGINT');
       process.exit(1);
     }
     switch (key.name) {

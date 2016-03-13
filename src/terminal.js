@@ -68,7 +68,7 @@ var terminal = {
 
     // Clear all characters from the terminal screen
     clear: function() {
-        process.stdout.write(this.escape_code + '[2J');
+        process.stdout.write(this.escape_code + '[2J' + this.escape_code + '[;H');
         return this;
     },
 
@@ -86,6 +86,10 @@ var terminal = {
 
     hideCursor: function() {
         process.stdout.write(this.escape_code + '[?25l');
+    },
+
+    showCursor: function() {
+        process.stdout.write(this.escape_code + '[?25h');
     }
 };
 

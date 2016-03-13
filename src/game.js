@@ -65,7 +65,7 @@ function intersects (pos, dangerZone) {
   return false;
 }
 
-function generateScene () {
+function generateMobs () {
   const packages = Object.keys(installingPackages);
   if (packages.length > 0 && (Math.random() * 100) < DIFFICULTY) {
     const lastMsg = packages.pop();
@@ -79,7 +79,7 @@ function addScore (int) {
 
 function startGame () {
   startSequence(function () {
-    LOOP = setInterval(runLoop, FRAMERATE);
+    LOOP = interval(runLoop, FRAMERATE);
   })
 }
 
@@ -87,10 +87,29 @@ function fire () {
   gameState.push(new Bullet(player.left));
 }
 
+function interval(func, wait, times){
+    var interv = function(w, t){
+        return function(){
+            if(typeof t === "undefined" || t-- > 0){
+                setTimeout(interv, w);
+                try{
+                    func.call(null);
+                }
+                catch(e){
+                    t = 0;
+                    throw e.toString();
+                }
+            }
+        };
+    }(wait, times);
+
+    setTimeout(interv, wait);
+};
+
 function runLoop () {
   if (ALIVE) {
     // term.clear();
-    generateScene();
+    generateMobs();
     paintScreen();
   }
 };

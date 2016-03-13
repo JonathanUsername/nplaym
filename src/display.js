@@ -5,6 +5,7 @@ import colors from 'colors';
 import term from './terminal.js';
 
 function paintScreen () {
+  term.clear();
 
   for (let line = 0; line < HEIGHT; line++) {
 
