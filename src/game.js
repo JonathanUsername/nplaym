@@ -1,8 +1,9 @@
-import { HEIGHT, WIDTH, LEFTWALL, RIGHTWALL, MIDWIDTH, MIDHEIGHT, FPS, FRAMERATE, DIFFICULTY, STARTTIME, PLAYERLINE } from './constants.js';
+import { HEIGHT, WIDTH, LEFTWALL, RIGHTWALL, MIDWIDTH, MIDHEIGHT, FPS, FRAMERATE, DIFFICULTY, STARTTIME, PLAYERLINE, LOSEMSGS } from './constants.js';
 import term from './terminal.js';
 import { Monster, Bullet } from './classes.js';
 import { writeCentre, paintScreen, startSequence } from './display.js';
 import { installingPackages } from './io.js';
+import util from './util.js'
 
 let SCORE = 0; 
 let ALIVE = true;
@@ -48,11 +49,32 @@ function checkIntersects (entities) {
   });
 }
 
+function timeDifference (d, dd) {
+    const sec = 1000;
+    const minute = sec * 60;
+    const hour = minute * 60;
+    let ms = Math.abs(d - dd);
+
+    const hours = parseInt(ms / hour, 10);
+    ms -= hours * hour;
+    var minutes = parseInt(ms / minute, 10);
+    ms -= minutes * minute;
+    var secs = parseInt(ms / sec, 10);
+    ms -= secs * sec;
+
+    return [
+        hours ? hours + ' hours,' : '',
+        minutes ? minutes + ' minutes,' : '',
+        secs + ' seconds'
+    ].join(' ').trime;
+}
+
 function gameOver (win) {
+  const playTime = timeDifference(new Date().getTime(), STARTTIME);
   if (win) {
-    writeCentre(`You win! Packages installed! Your score was ${SCORE}.`);
+    writeCentre(`You win! Packages installed!\nYour score was ${SCORE}.\nInstallation took ${playTime}`);
   } else {
-    writeCentre(`You lose! Give up, go home, and sell your keyboard on ebay.\nNo packages have been installed but then I'm sure you've got used to failure by now.\n\nYour score was ${SCORE}.`);
+    writeCentre(util.getRandom(LOSEMSGS) + `\nYour score was ${SCORE}.\nYou lasted ${playTime}`);
   }
   process.exit(0);
 }
