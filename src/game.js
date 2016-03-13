@@ -66,7 +66,7 @@ function timeDifference (d, dd) {
         hours ? hours + ' hours,' : '',
         minutes ? minutes + ' minutes,' : '',
         secs + ' seconds'
-    ].join(' ').trime;
+    ].join(' ').trim();
 }
 
 function gameOver (win) {
