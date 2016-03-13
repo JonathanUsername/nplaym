@@ -344,7 +344,7 @@ function paintScreen() {
       terminal.left(scoreTxt.length);
     }
 
-    terminal.nl();
+    terminal.down(1);
   }
 
   gameState.filter(function (item) {
@@ -358,11 +358,18 @@ function cursorReturn(item) {
   terminal.left(item.left + item.s.length);
 }
 
-function paintMovers(line) {
-  var entities = gameState.filter(function (item) {
+function getEntities(line) {
+  return gameState.filter(function (item) {
     return item.up === line;
   }).sort(function (a, b) {
     return a.left > b.left;
+  });
+}
+
+function paintMovers(line) {
+  var entities = getEntities(line);
+  var bulletsBelow = gameState.filter(function (item) {
+    return item.up === line + 1 && item.type === 'bullet';
   });
 
   if (entities.length > 0) {
@@ -370,9 +377,9 @@ function paintMovers(line) {
       terminal.right(item.left).write(item.s[item.colour]);
       cursorReturn(item);
     });
-    checkBullet(line, entities);
+    checkBullet(entities.concat(bulletsBelow));
     if (line === PLAYERLINE) {
-      checkIntersects(line, entities);
+      checkIntersects(entities);
     }
   }
 }
@@ -439,7 +446,7 @@ var gameState = [{
 
 var player = gameState[0];
 
-function checkBullet(line, entities) {
+function checkBullet(entities) {
   var bullets = entities.filter(function (i) {
     return i.type === 'bullet';
   });
@@ -462,14 +469,13 @@ function checkBullet(line, entities) {
   });
 }
 
-function checkIntersects(line, entities) {
+function checkIntersects(entities) {
   var playerPos = entities.find(function (item) {
     return item.type === 'player';
   }).left;
   var mobs = entities.filter(function (i) {
     return i.type === 'mob';
   });
-  var dangerZone = [];
   mobs.forEach(function (mob) {
     if (intersects(playerPos, mob.dangerZone) && !mob.dead) {
       ALIVE = false;
