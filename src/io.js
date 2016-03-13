@@ -20,7 +20,7 @@ const installingPackages = {};
 function startListening () {
   npm.stdout.on('data', d => {
     var str = d.toString();
-    if (str.length > 5) {
+    if (str.length > 10) {
       npmOutput = str;
     }
     // We store it as keys in an object to quickly uniq them
