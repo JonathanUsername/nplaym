@@ -7,7 +7,7 @@ This is a terminal-based game, so you can even play it over SSH. It works by spa
 
 ![screen shot 2016-03-10 at 11 35 44](https://cloud.githubusercontent.com/assets/7237525/13668378/450a150a-e6b4-11e5-96ef-4edbb5b7b3ba.png)
 
-## How to install
+## How to install 
 ```
 npm install -g nplaym
 ```
