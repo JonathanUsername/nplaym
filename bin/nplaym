@@ -498,7 +498,7 @@ function timeDifference(d, dd) {
   var secs = parseInt(ms / sec, 10);
   ms -= secs * sec;
 
-  return [hours ? hours + ' hours,' : '', minutes ? minutes + ' minutes,' : '', secs + ' seconds'].join(' ').trime;
+  return [hours ? hours + ' hours,' : '', minutes ? minutes + ' minutes,' : '', secs + ' seconds'].join(' ').trim();
 }
 
 function gameOver(win) {
