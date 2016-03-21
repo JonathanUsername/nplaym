@@ -7,7 +7,7 @@ This is a terminal-based game, so you can even play it over SSH. It works by spa
 
 I created this as a bit of fun after discussing with a colleague about slow NPM installs. One of the key ideas was to point out just how many packages you are installing by turning them all into enemies you have to blast or avoid. You might not realise how many packages you're relying on.
 
-![screen shot 2016-03-10 at 11 35 44](https://cloud.githubusercontent.com/assets/7237525/13668378/450a150a-e6b4-11e5-96ef-4edbb5b7b3ba.png)
+![screen shot 2016-03-10 at 11 35 44](https://fat.gfycat.com/ThornyDownrightCowrie.gif)
 
 ## How to install 
 
